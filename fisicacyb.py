@@ -33,6 +33,14 @@ EQ = {
     "v0": ("desplazamiento con la velocidad final", r"@dx=@v\cdot@t-\dfrac{1}{2}\cdot@a\cdot@t^2", dx, v * t - a * t**2 / 2),
 }
 
+# Módulos habilitados en esta versión
+MODULOS_HABILITADOS = {
+    "Introducción y mediciones": "mediciones",
+    "Cinemática": "cinematica",
+    "Dinámica y leyes de Newton": "dinamica",
+    "Introducción al electromagnetismo": "ohm",
+}
+
 PLAN = {
     "1.º año · 4.º de Liceo (Tramo 7)": [
         ("Introducción y mediciones", "SI, cifras significativas, errores e incertidumbre"),
@@ -147,7 +155,7 @@ def num_txt(k, x):
     return f"{VARS[k][1]} = {plano(x)} {VARS[k][3]}"
 
 
-# ---------- Motor exacto (SymPy): hace todas las cuentas ----------
+# ---------- Motor exacto (SymPy): Cinemática ----------
 def resolver(datos):
     sub = {E[k]: nsimplify(x, rational=True) for k, x in datos.items()}
     inc = [k for k in VARS if k not in datos]
@@ -256,9 +264,8 @@ def mostrar(datos):
             )
 
 
-# ---------- Tutor / Analizador Gratuito (sin API de pago) ----------
-def analizar_enunciado_gratis(texto):
-    """Analiza el enunciado en español de forma gratuita y sin API de pago."""
+# ---------- Analizador de enunciados en español ----------
+def analizar_enunciado(texto):
     limpio = texto.strip()
     baja = limpio.lower()
 
@@ -277,14 +284,13 @@ def analizar_enunciado_gratis(texto):
                 "datos": {},
                 "frases": [],
                 "incognita": None,
-                "cuidados": [f"Este enunciado parece corresponder a <b>{nombre_tema}</b>. Verificá las magnitudes y fórmulas de ese tema."],
+                "cuidados": [f"Este enunciado parece corresponder a <b>{nombre_tema}</b>. Podés abrir ese módulo desde el menú de temas."],
             }, None
 
     datos = {}
     frases = []
     cuidados = []
 
-    # 1. Datos implícitos frecuentes en bachillerato
     if re.search(r"\b(reposo|se suelta|deja caer|dejado caer|parte del reposo)\b", baja):
         datos["v0"] = 0.0
         frases.append({
@@ -314,7 +320,6 @@ def analizar_enunciado_gratis(texto):
         })
         cuidados.append("Revisá el signo de la aceleración (g = 9,8 m/s²) según el sentido positivo que elijas en tu eje vertical.")
 
-    # 2. Buscar valores numéricos con unidades
     patron_num = r"(-?\d+(?:[.,]\d+)?)\s*(km/h|m/s²|m/s2|m/s|km|cm|mm|m|min|horas|hora|h|s)\b"
     for m in re.finditer(patron_num, baja):
         raw_num = m.group(1).replace(",", ".")
@@ -401,7 +406,6 @@ def analizar_enunciado_gratis(texto):
                     "por_que": "Tiempo en segundos (SI).",
                 })
 
-    # 3. Detectar incógnita probable
     incognita = None
     if re.search(r"cuánto tarda|cuanto tarda|qué tiempo|que tiempo|en qué momento|tiempo", baja) and "t" not in datos:
         incognita = "t"
@@ -452,7 +456,7 @@ def ir(clave):
 
 def pie():
     st.markdown(
-        f'<div class="credit">Desarrollador: <b>Leonardo Olivera</b><br>'
+        f'<div class="credit">Desarrollador: <b>Leonardo Olivea</b><br>'
         f'<span class="agro">🌾 Bachiller en Agronomía</span><br>'
         f'<a href="{NOTION_URL}" target="_blank">Ver mi sitio</a></div>',
         unsafe_allow_html=True,
@@ -471,7 +475,7 @@ def datos_validos(d):
 # ---------- Páginas ----------
 def home():
     st.markdown(
-        '<div class="hero"><h1>Física paso a paso</h1><p>Pegá un ejercicio y lo desmenuzo gratis: qué datos tiene, '
+        '<div class="hero"><h1>Física paso a paso</h1><p>Pegá un ejercicio y lo desmenuzo: qué datos tiene, '
         'qué teoría usar y cómo resolverlo sin perderte. Las cuentas exactas las hace SymPy.</p></div>',
         unsafe_allow_html=True,
     )
@@ -484,9 +488,9 @@ def home():
             key="enun",
             placeholder="Ej: Una piedra se deja caer desde un puente y tarda 3 s en llegar al agua. ¿Qué altura tiene el puente?",
         )
-        if st.button("Desmenuzar ejercicio (Gratis)", type="primary", disabled=len(texto.strip()) < 15):
+        if st.button("Desmenuzar ejercicio", type="primary", disabled=len(texto.strip()) < 15):
             with st.spinner("Analizando el enunciado…"):
-                st.session_state.analisis = analizar_enunciado_gratis(texto)
+                st.session_state.analisis = analizar_enunciado(texto)
 
     res = st.session_state.get("analisis")
     if res:
@@ -513,9 +517,9 @@ def home():
                 if info.get("tipo") == "otro":
                     box(
                         "sign",
-                        "Tema fuera de esta versión",
+                        "Tema de otro módulo",
                         f"Parece de <b>{info.get('tema', 'otro tema')}</b>. "
-                        "Ese módulo está en desarrollo; arriba te dejé la guía inicial para ese tema.",
+                        "Podés abrir el módulo correspondiente en el listado de temas de abajo.",
                     )
                 elif len(d) == 3:
                     st.markdown("#### 3. Resolución")
@@ -536,79 +540,12 @@ def home():
         with col_:
             st.markdown(f'<div class="plan-h">{anio}</div>', unsafe_allow_html=True)
             for nombre, resumen in temas:
-                listo = nombre == "Cinemática"
+                clave_mod = MODULOS_HABILITADOS.get(nombre)
+                listo = clave_mod is not None
                 st.button(
                     ("▶ " if listo else "") + nombre + ("" if listo else " · pronto"),
                     disabled=not listo,
                     on_click=ir,
-                    args=("cinematica",),
+                    args=(clave_mod or "home",),
                     use_container_width=True,
-                    key=f"t_{nombre}",
-                )
-                st.markdown(f'<div class="cap">{resumen}</div>', unsafe_allow_html=True)
-    pie()
-
-
-def preset(**kw):
-    for k in VARS:
-        st.session_state[f"s_{k}"] = k in kw
-        st.session_state[f"n_{k}"] = float(kw.get(k, 0.0))
-
-
-def cinematica():
-    st.button("← Volver al inicio", on_click=volver, key="back")
-    st.markdown('<div class="hero"><h1>Cinemática</h1><p>Movimiento en una dimensión: MRU, MRUA, caída libre y tiro vertical.</p></div>', unsafe_allow_html=True)
-    tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
-    with tab1, st.container(key="teoria"):
-        st.markdown(
-            "**1. Sistema de referencia.** Elegí un origen y un sentido positivo. Lo que va en ese sentido es **+**, lo contrario es **−**. "
-            "En vertical conviene que + sea hacia arriba."
-        )
-        st.markdown("**2. Las cinco magnitudes**")
-        st.markdown("".join(chip(f"{x[1]} · {x[2]} ({x[3]})", x[4]) for x in VARS.values()), unsafe_allow_html=True)
-        st.markdown("**3. ¿Qué ecuación uso?** En MRUA elegí la que **no tiene** la magnitud que no conocés ni necesitás:")
-        for k in VARS:
-            st.markdown(f"Sin {chip(VARS[k][1], VARS[k][4])} → *{EQ[k][0]}*", unsafe_allow_html=True)
-            st.latex(eq_tex(k, {x: C(x, VARS[x][0]) for x in VARS}))
-        st.markdown("**4. MRU:** velocidad constante, a = 0. Alcanza con Δx = v·t.")
-        st.markdown(
-            "**5. Caída libre y tiro vertical:** a = −g = −9,8 m/s² (con + hacia arriba). «Se suelta» o «reposo» significa v₀ = 0. "
-            "En el punto más alto v = 0. Subir y bajar a la misma altura tarda lo mismo."
-        )
-        box(
-            "warn",
-            "Errores típicos",
-            "Olvidar el signo de g · no pasar km/h a m/s (dividí entre 3,6) · "
-            "no darse cuenta de que «se detiene» es v = 0.",
-        )
-    with tab2, st.container(key="solver"):
-        st.markdown("Marcá **exactamente 3 datos** de los 5 y completá sus valores. Unidades: m, m/s, m/s², s.")
-        pc = st.columns(4)
-        pc[0].button("Caída libre (reposo, 2 s)", on_click=preset, kwargs=dict(v0=0, a=-9.8, t=2), use_container_width=True)
-        pc[1].button("Altura máxima (20 m/s)", on_click=preset, kwargs=dict(v0=20, a=-9.8, v=0), use_container_width=True)
-        pc[2].button("Frenado (20 m/s a −5)", on_click=preset, kwargs=dict(v0=20, v=0, a=-5), use_container_width=True)
-        pc[3].button("MRU (10 m/s, 5 s)", on_click=preset, kwargs=dict(v0=10, a=0, t=5), use_container_width=True)
-        datos = {}
-        for col_, k in zip(st.columns(5), VARS):
-            with col_.container(key=f"c{k}"):
-                st.checkbox("Es dato", key=f"s_{k}")
-                x = st.number_input(
-                    f"{VARS[k][1]} · {VARS[k][2]} ({VARS[k][3]})",
-                    format="%g",
-                    step=1.0,
-                    key=f"n_{k}",
-                    disabled=not st.session_state[f"s_{k}"],
-                )
-                if st.session_state[f"s_{k}"]:
-                    datos[k] = x
-        if len(datos) != 3:
-            box("sign", "Faltan o sobran datos", f"Marcaste {len(datos)}. Con exactamente 3 datos el problema queda resuelto.")
-        else:
-            mostrar(datos)
-    pie()
-
-
-if st.session_state.tema == "home":
-    home()
-else:
-    cinematica()
+                    key=f"t_{
