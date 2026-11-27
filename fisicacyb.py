@@ -68,7 +68,7 @@ header[data-testid="stHeader"]{background:transparent}[data-testid="stSidebar"],
 .block-container{max-width:1250px;padding-top:1.4rem}h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif!important}
 .hero h1{margin:0;font-size:2.7rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(90deg,#fff,#22e3ff 60%,#b388ff);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0}
 .hero p{color:#aab3e6;max-width:760px;margin:4px 0 14px;font-size:1.05rem}
-.st-key-pegar,.st-key-teoria,.st-key-solver,.st-key-resul{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:20px 24px;backdrop-filter:blur(14px)}
+.st-key-pegar,.st-key-teoria_tab1,.st-key-teoria_tab2,.st-key-teoria_din,.st-key-teoria_ohm,.st-key-solver,.st-key-solver_din,.st-key-solver_ohm,.st-key-solver_med,.st-key-resul{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:20px 24px;backdrop-filter:blur(14px)}
 .st-key-pegar{border-color:#22e3ff88;box-shadow:0 0 40px -14px #22e3ff}
 textarea{background:rgba(0,0,0,.4)!important;color:#e8ecff!important;border-radius:14px!important;font-size:1.02rem!important}
 div[data-baseweb="textarea"]{border:1.5px solid #22e3ff!important;border-radius:14px!important;background:rgba(0,0,0,.4)!important}
@@ -562,7 +562,7 @@ def cinematica():
     st.button("← Volver al inicio", on_click=volver, key="back")
     st.markdown('<div class="hero"><h1>Cinemática</h1><p>Movimiento en una dimensión: MRU, MRUA, caída libre y tiro vertical.</p></div>', unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
-    with tab1, st.container(key="teoria"):
+    with tab1, st.container(key="teoria_tab1"):
         st.markdown(
             "**1. Sistema de referencia.** Elegí un origen y un sentido positivo. Lo que va en ese sentido es **+**, lo contrario es **−**. "
             "En vertical conviene que + sea hacia arriba."
@@ -615,13 +615,13 @@ def dinamica():
     st.button("← Volver al inicio", on_click=volver, key="back_din")
     st.markdown('<div class="hero"><h1>Dinámica y Leyes de Newton</h1><p>Fuerza neta, masa, aceleración y peso en unidades del SI.</p></div>', unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
-    with tab1, st.container(key="teoria"):
+    with tab1, st.container(key="teoria_din"):
         st.markdown("**1. Segunda Ley de Newton:** la fuerza neta aplicada a un cuerpo es igual a su masa por su aceleración.")
         st.latex(r"\sum \vec{F} = m \cdot \vec{a}")
         st.markdown("**2. Peso:** fuerza gravitatoria sobre un cuerpo de masa $m$ ($g = 9,8\text{ m/s}^2$).")
         st.latex(r"P = m \cdot g")
         box("warn", "Errores típicos", "Confundir masa (kg) con peso (N) · olvidar restar la fuerza de rozamiento cuando se opone al movimiento.")
-    with tab2, st.container(key="solver"):
+    with tab2, st.container(key="solver_din"):
         st.markdown("Elegí qué querés calcular con la 2.ª Ley de Newton ($F_{\\text{neta}} = m \\cdot a$):")
         modo = st.selectbox("Incógnita", ["Fuerza neta (N)", "Masa (kg)", "Aceleración (m/s²)"])
         if modo == "Fuerza neta (N)":
@@ -652,11 +652,11 @@ def ohm():
     st.button("← Volver al inicio", on_click=volver, key="back_ohm")
     st.markdown('<div class="hero"><h1>Electromagnetismo · Ley de Ohm</h1><p>Voltaje, corriente, resistencia y potencia eléctrica.</p></div>', unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
-    with tab1, st.container(key="teoria"):
+    with tab1, st.container(key="teoria_ohm"):
         st.markdown("**Ley de Ohm:** en un resistor óhmico, la diferencia de potencial es proporcional a la corriente.")
         st.latex(r"V = I \cdot R \qquad P = V \cdot I")
         box("warn", "Unidades SI", "Voltaje en voltios (V), corriente en amperes (A) y resistencia en ohms (Ω).")
-    with tab2, st.container(key="solver"):
+    with tab2, st.container(key="solver_ohm"):
         calc = st.selectbox("¿Qué querés calcular?", ["Voltaje V (V)", "Corriente I (A)", "Resistencia R (Ω)"])
         if calc == "Voltaje V (V)":
             i_val = st.number_input("Corriente I (A)", value=2.0, step=0.1)
@@ -695,7 +695,7 @@ def mediciones():
     )
     tab1, tab2, tab3 = st.tabs(["Fundamentos y SI", "Errores y Cifras Significativas", "Laboratorio Interactivo"])
 
-    with tab1, st.container(key="teoria"):
+    with tab1, st.container(key="teoria_tab1"):
         st.markdown("### 1. ¿Qué es medir y por qué importa tanto en Ingeniería Agroambiental?")
         st.markdown(
             "Medir es **comparar** una magnitud física con un patrón o unidad de referencia aceptada. "
@@ -731,7 +731,7 @@ def mediciones():
         st.latex(r"1\ \text{min} = 60\ \text{s} \qquad 1\ \text{h} = 3600\ \text{s} \qquad \frac{v\ [\text{km/h}]}{3{,}6} = v\ [\text{m/s}]")
         st.latex(r"1\ \text{ha} = 10\,000\ \text{m}^2 \qquad 1\ \text{L} = 10^{-3}\ \text{m}^3 = 1\ \text{dm}^3")
 
-    with tab2, st.container(key="teoria"):
+    with tab2, st.container(key="teoria_tab2"):
         st.markdown("### 4. Exactitud vs. Precisión")
         st.markdown(
             "* **Precisión:** qué tan cerca están entre sí varias mediciones repetidas (poca dispersión, repetibilidad). Depende mucho del instrumento y de la técnica.\n"
@@ -777,7 +777,7 @@ def mediciones():
                 "<a href='https://www.youtube.com/results?search_query=Fisica+con+Gustavo+error+absoluto+relativo+porcentual' target='_blank'>▶ Buscar en YouTube: Física con Gustavo (Errores)</a>",
             )
 
-    with tab3, st.container(key="solver"):
+    with tab3, st.container(key="solver_med"):
         st.markdown("### 8. Calculadora de serie de mediciones y gráfico de dispersión")
         st.markdown("Ingresá tus mediciones separadas por coma (o usá el ejemplo rápido de ensayo de caudal/tiempo).")
         if st.button("Cargar ejemplo de ensayo (5 mediciones)", key="btn_ej_med"):
@@ -848,7 +848,7 @@ def mediciones():
 
 
 # ==============================================================================
-# DESDE AQUÍ — PEGAR PRÓXIMO MÓDULO
+# DESDE AQUÍ — PEGAR PRÓXIMO MÓDULO DE FÍSICA
 # Pegá debajo la función del siguiente tema y agregalo en MODULOS_HABILITADOS y PAGINAS.
 
 
