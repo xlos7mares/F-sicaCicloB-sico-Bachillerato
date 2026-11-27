@@ -67,7 +67,7 @@ CSS = """<style>
 header[data-testid="stHeader"]{background:transparent}[data-testid="stSidebar"],[data-testid="collapsedControl"]{display:none}
 .block-container{max-width:1250px;padding-top:1.4rem}h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif!important}
 .hero h1{margin:0;font-size:2.7rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(90deg,#fff,#22e3ff 60%,#b388ff);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0}
-.hero p{color:#aab3e6;max-width:720px;margin:4px 0 14px;font-size:1.05rem}
+.hero p{color:#aab3e6;max-width:760px;margin:4px 0 14px;font-size:1.05rem}
 .st-key-pegar,.st-key-teoria,.st-key-solver,.st-key-resul{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:20px 24px;backdrop-filter:blur(14px)}
 .st-key-pegar{border-color:#22e3ff88;box-shadow:0 0 40px -14px #22e3ff}
 textarea{background:rgba(0,0,0,.4)!important;color:#e8ecff!important;border-radius:14px!important;font-size:1.02rem!important}
@@ -76,11 +76,11 @@ div[data-baseweb="textarea"]:focus-within{box-shadow:0 0 0 3px #22e3ff44,0 0 28p
 .plan-h{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.25rem;color:#ffe14a;text-shadow:0 0 12px #ffe14a77;margin:6px 0 2px}
 .cap{color:#8d97cf;font-size:.8rem;margin:-6px 0 8px;line-height:1.3}
 .chip{display:inline-block;padding:1px 11px;margin:2px 3px 2px 0;border-radius:999px;color:var(--k);font-weight:700;background:color-mix(in srgb,var(--k) 14%,transparent);border:1px solid var(--k);text-shadow:0 0 10px var(--k)}
-.hint,.warn,.sign,.ok{margin:10px 0 4px;padding:12px 14px;border-radius:14px;line-height:1.5}
+.hint,.warn,.sign,.ok{margin:10px 0 4px;padding:12px 14px;border-radius:14px;line-height:1.55}
 .hint{background:rgba(255,225,74,.08);border-left:3px solid #ffe14a;color:#f3f0d0}
 .warn{background:rgba(255,79,216,.09);border-left:3px solid #ff4fd8;color:#ffd6f6}.warn b{color:#ff4fd8}
 .sign{background:rgba(34,227,255,.09);border-left:3px solid #22e3ff;color:#d4f8ff}.sign b{color:#22e3ff}
-.ok{background:rgba(184,255,44,.1);border:1px solid #b8ff2c;color:#e6ffb3;box-shadow:0 0 24px -8px #b8ff2c;font-size:1.1rem}
+.ok{background:rgba(184,255,44,.1);border:1px solid #b8ff2c;color:#e6ffb3;box-shadow:0 0 24px -8px #b8ff2c;font-size:1.08rem}
 .sh{margin:14px 0 4px;font-family:'Bricolage Grotesque',sans-serif;font-size:1.2rem;font-weight:800;color:#fff}
 .frase{margin:8px 0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
 .frase i{color:#aab3e6}
@@ -94,6 +94,8 @@ div[data-baseweb="textarea"]:focus-within{box-shadow:0 0 0 3px #22e3ff44,0 0 28p
 [data-testid="stNumberInput"] div[data-baseweb="input"]{background:rgba(0,0,0,.45)!important;border:1.5px solid var(--k)!important;border-radius:14px!important}
 [data-testid="stNumberInput"] input{color:var(--k)!important;font-weight:800;font-size:1.4rem;text-shadow:0 0 12px var(--k)}
 [data-testid="stNumberInput"] button{color:var(--k)!important}
+.fluor-zone{margin:24px 0;padding:14px 18px;border-radius:16px;border:2px dashed #39ff14;background:rgba(57,255,20,.08);box-shadow:0 0 24px -6px #39ff14;color:#d8ffd0;font-family:monospace;font-size:.9rem}
+.fluor-zone b{color:#39ff14;font-size:1rem;text-shadow:0 0 10px #39ff14}
 .credit{margin:36px auto 12px;max-width:600px;text-align:center;padding:16px 22px;border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);color:#aab3e6;line-height:1.65;transition:box-shadow .25s,border-color .25s}
 .credit:hover{border-color:#b8ff2c;box-shadow:0 0 30px -8px #b8ff2c}
 .credit b{color:#ffe14a;font-size:1.15rem;text-shadow:0 0 12px #ffe14a88}
@@ -687,30 +689,177 @@ def ohm():
 
 def mediciones():
     st.button("← Volver al inicio", on_click=volver, key="back_med")
-    st.markdown('<div class="hero"><h1>Mediciones e Incertidumbre</h1><p>Promedio, error absoluto, error porcentual y pasaje al SI.</p></div>', unsafe_allow_html=True)
-    tab1, tab2 = st.tabs(["Teoría", "Calculadora de serie"])
+    st.markdown(
+        '<div class="hero"><h1>Mediciones e Incertidumbre</h1>'
+        '<p>Base fundamental para Física e Ingeniería Agroambiental: magnitudes, Sistema Internacional (SI), '
+        'cifras significativas, exactitud vs. precisión y tratamiento de errores.</p></div>',
+        unsafe_allow_html=True,
+    )
+    tab1, tab2, tab3 = st.tabs(["Fundamentos y SI", "Errores y Cifras Significativas", "Laboratorio Interactivo"])
+
     with tab1, st.container(key="teoria"):
-        st.markdown("**Promedio y error absoluto:** ante varias mediciones repetidas, se calcula el promedio $\\bar{x}$ y la dispersión máxima.")
-        st.latex(r"\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i \qquad E_{\text{rel\%}} = \frac{\Delta x}{\bar{x}} \cdot 100")
-    with tab2, st.container(key="solver"):
-        raw = st.text_input("Ingresá mediciones separadas por coma", value="10.2, 10.4, 10.1, 10.3")
-        unidad = st.text_input("Unidad", value="s")
+        st.markdown("### 1. ¿Qué es medir y por qué importa tanto en Ingeniería Agroambiental?")
+        st.markdown(
+            "Medir es **comparar** una magnitud física con un patrón o unidad de referencia aceptada. "
+            "Ninguna medición humana ni de instrumento es infinitamente exacta: siempre existe una **incertidumbre** "
+            "(por la mínima división del instrumento, el tiempo de reacción, el viento, la temperatura o la variabilidad del suelo y el agua)."
+        )
+        box(
+            "sign",
+            "Ejemplo concreto en el campo / laboratorio",
+            "Si medís la lluvia caídacon un pluviómetro graduado cada <b>1 mm</b>, el valor más fino que podés leer "
+            "directamente es 1 mm. Si tomás 5 muestras de humedad de suelo o de caudal de un gotero y obtenés valores "
+            "ligeramente distintos, necesitás calcular el promedio y su incertidumbre para reportar un resultado serio.",
+        )
+
+        st.markdown("### 2. Magnitudes fundamentales del Sistema Internacional (SI)")
+        st.markdown(
+            "| Magnitud | Símbolo | Unidad SI | Símbolo unidad | Ejemplo de uso |\n"
+            "| :--- | :---: | :--- | :---: | :--- |\n"
+            "| Longitud | $l, d, x$ | metro | $\\text{m}$ | Altura de un cantero, profundidad de napa |\n"
+            "| Masa | $m$ | kilogramo | $\\text{kg}$ | Peso de muestra de biomasa o fertilizante |\n"
+            "| Tiempo | $t$ | segundo | $\\text{s}$ | Tiempo de llenado de un balde para calcular caudal |\n"
+            "| Temperatura termodinámica | $T$ | kelvin | $\\text{K}$ | Temperatura ambiental o de cámara de cultivo |\n"
+            "| Corriente eléctrica | $I$ | ampere | $\\text{A}$ | Sensores y circuitos de medición |\n"
+            "| Cantidad de sustancia | $n$ | mol | $\\text{mol}$ | Concentraciones químicas y soluciones |\n"
+            "| Intensidad luminosa | $I_v$ | candela | $\\text{cd}$ | Iluminación y radiación lumínica |"
+        )
+
+        st.markdown("### 3. Prefijos y conversiones rápidas al SI")
+        st.markdown(
+            "En Física casi siempre conviene pasar todo a unidades del **SI** antes de operar en fórmulas:"
+        )
+        st.latex(r"1\ \text{km} = 10^3\ \text{m} \qquad 1\ \text{cm} = 10^{-2}\ \text{m} \qquad 1\ \text{mm} = 10^{-3}\ \text{m}")
+        st.latex(r"1\ \text{min} = 60\ \text{s} \qquad 1\ \text{h} = 3600\ \text{s} \qquad \frac{v\ [\text{km/h}]}{3{,}6} = v\ [\text{m/s}]")
+        st.latex(r"1\ \text{ha} = 10\,000\ \text{m}^2 \qquad 1\ \text{L} = 10^{-3}\ \text{m}^3 = 1\ \text{dm}^3")
+
+    with tab2, st.container(key="teoria"):
+        st.markdown("### 4. Exactitud vs. Precisión")
+        st.markdown(
+            "* **Precisión:** qué tan cerca están entre sí varias mediciones repetidas (poca dispersión, repetibilidad). Depende mucho del instrumento y de la técnica.\n"
+            "* **Exactitud:** qué tan cerca está el valor medido del **valor verdadero** o de referencia (ausencia de errores sistemáticos, como una balanza mal calibrada o un cero corrido)."
+        )
+        box(
+            "warn",
+            "Trampa clásica",
+            "Podés tener un instrumento muy **preciso** (marca siempre `14,20 °C`, `14,21 °C`, `14,20 °C`), pero poco **exacto** si está descalibrado y el termómetro patrón marca `16,5 °C` (error sistemático).",
+        )
+
+        st.markdown("### 5. Cifras significativas (c.s.) — reglas prácticas")
+        st.markdown(
+            "Las cifras significativas de una medida incluyen todos los dígitos seguros más el primer dígito estimado:\n"
+            "1. Todos los dígitos distintos de cero **son significativos** (`48,25 m` → **4 c.s.**).\n"
+            "2. Los ceros **entre** cifras distintas de cero **son significativos** (`1004 s` → **4 c.s.**).\n"
+            "3. Los ceros **a la izquierda** del primer dígito distinto de cero **NO son significativos** (`0,0035 kg` → solo **2 c.s.**: el `3` y el `5`).\n"
+            "4. Los ceros **a la derecha** con coma decimal **SÍ son significativos** (`2,50 m` → **3 c.s.**)."
+        )
+
+        st.markdown("### 6. Error absoluto, relativo y porcentual")
+        st.latex(r"\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i \qquad \Delta x = \max_i |x_i - \bar{x}| \quad (\text{o incerteza del instrumento})")
+        st.latex(r"E_{\text{rel}} = \frac{\Delta x}{\bar{x}} \qquad E_{\text{rel\%}} = \frac{\Delta x}{\bar{x}} \cdot 100")
+        st.markdown("El resultado final se expresa como: **valor medido = $(\bar{x} \pm \Delta x)\ \text{unidad}$**.")
+
+        st.markdown("### 7. Ayuda audiovisual en YouTube (docentes de Física)")
+        st.markdown(
+            "Como refuerzo visual, podés repasar estos temas en canales docentes de Física en español:"
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            box(
+                "sign",
+                "Prof. Sergio Llanos · Mediciones, SI y errores",
+                "Explicaciones directas y paso a paso de unidades, notación científica, cifras significativas y errores de medición.<br>"
+                "<a href='https://www.youtube.com/results?search_query=Sergio+Llanos+cifras+significativas+errores+medicion' target='_blank'>▶ Buscar en YouTube: Sergio Llanos (Mediciones y errores)</a>",
+            )
+        with c2:
+            box(
+                "hint",
+                "Física con Gustavo · Incertidumbre y propagación de errores",
+                "Ideal para afianzar promedio, error absoluto, error relativo y cómo escribir bien un resultado experimental.<br>"
+                "<a href='https://www.youtube.com/results?search_query=Fisica+con+Gustavo+error+absoluto+relativo+porcentual' target='_blank'>▶ Buscar en YouTube: Física con Gustavo (Errores)</a>",
+            )
+
+    with tab3, st.container(key="solver"):
+        st.markdown("### 8. Calculadora de serie de mediciones y gráfico de dispersión")
+        st.markdown("Ingresá tus mediciones separadas por coma (o usá el ejemplo rápido de ensayo de caudal/tiempo).")
+        if st.button("Cargar ejemplo de ensayo (5 mediciones)", key="btn_ej_med"):
+            st.session_state["med_raw"] = "12.4, 12.6, 12.2, 12.5, 12.3"
+            st.session_state["med_uni"] = "s"
+
+        raw = st.text_input(
+            "Mediciones separadas por coma",
+            value=st.session_state.get("med_raw", "12.4, 12.6, 12.2, 12.5, 12.3"),
+            key="med_raw_input",
+        )
+        unidad = st.text_input(
+            "Unidad (ej: s, m, mm, kg, °C)",
+            value=st.session_state.get("med_uni", "s"),
+            key="med_uni_input",
+        )
         try:
             vals = [float(x.strip().replace(",", ".")) for x in raw.split(",") if x.strip()]
         except ValueError:
             vals = []
+
         if len(vals) < 2:
-            box("sign", "Ingresá al menos 2 valores", "Ejemplo: 12.1, 12.3, 11.9")
+            box("sign", "Ingresá al menos 2 valores", "Ejemplo: 12.4, 12.6, 12.2, 12.5, 12.3")
         else:
-            arr = np.array(vals)
+            arr = np.array(vals, dtype=float)
             prom = float(np.mean(arr))
             err_abs = float(np.max(np.abs(arr - prom)))
             err_pct = (err_abs / abs(prom) * 100) if prom != 0 else 0.0
+            err_rel = (err_abs / abs(prom)) if prom != 0 else 0.0
+
             st.markdown(
-                f'<div class="ok">Resultado: <b>({prom:.4g} ± {err_abs:.4g}) {unidad}</b> · Error porcentual: <b>{err_pct:.2f}%</b></div>',
+                f'<div class="ok">Resultado: <b>({prom:.4g} ± {err_abs:.4g}) {unidad}</b> · '
+                f'Error relativo: <b>{err_rel:.4g}</b> · Error porcentual: <b>{err_pct:.2f}%</b></div>',
                 unsafe_allow_html=True,
             )
+
+            muestras = [f"M{i+1}" for i in range(len(arr))]
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=muestras,
+                y=arr,
+                mode="markers+lines",
+                name="Medición individual",
+                marker=dict(size=10, color="#22e3ff"),
+                line=dict(color="#22e3ff", width=2),
+            ))
+            fig.add_hline(y=prom, line_dash="solid", line_color="#b8ff2c", annotation_text=f"Promedio ({prom:.4g})")
+            if err_abs > 0:
+                fig.add_hrect(
+                    y0=prom - err_abs,
+                    y1=prom + err_abs,
+                    fillcolor="rgba(184, 255, 44, 0.14)",
+                    line_width=0,
+                    annotation_text=f"Banda ±{err_abs:.4g}",
+                )
+            fig.update_layout(
+                title=dict(text=f"Dispersión de mediciones ({unidad})", font=dict(color="#e8ecff", size=14)),
+                height=310,
+                margin=dict(l=8, r=8, t=42, b=8),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,.25)",
+                xaxis=dict(color="#aab3e6"),
+                yaxis=dict(title=unidad, color="#aab3e6", gridcolor="rgba(255,255,255,.08)"),
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+
     pie()
+
+
+# ==============================================================================
+# 🟢🟢🟢 PEGAR PRÓXIMO MÓDULO DESDE AQUÍ 🟢🟢🟢
+# Cuando pidas el siguiente tema del programa de Bachillerato, pegá su función
+# aquí y agregá su clave en MODULOS_HABILITADOS y PAGINAS.
+# 🟢🟢🟢 HASTA AQUÍ 🟢🟢🟢
+# ==============================================================================
+st.markdown(
+    '<div class="fluor-zone"><b>🟢 ZONA FLÚOR · PRÓXIMO MÓDULO AQUÍ</b><br>'
+    'Marcador de código listo: <code>DESDE AQUÍ</code> / <code>HASTA AQUÍ</code> para sumar el próximo tema sin perder nada.</div>',
+    unsafe_allow_html=True,
+)
 
 
 PAGINAS = {
