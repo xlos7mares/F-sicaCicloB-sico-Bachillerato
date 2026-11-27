@@ -33,7 +33,6 @@ EQ = {
     "v0": ("desplazamiento con la velocidad final", r"@dx=@v\cdot@t-\dfrac{1}{2}\cdot@a\cdot@t^2", dx, v * t - a * t**2 / 2),
 }
 
-# Módulos habilitados en esta versión
 MODULOS_HABILITADOS = {
     "Introducción y mediciones": "mediciones",
     "Cinemática": "cinematica",
@@ -111,7 +110,6 @@ def C(k, txt):
 
 
 def dec(x):
-    """Decimal con coma si es finito; si no, fracción o aproximación."""
     x = S(x)
     if x.is_Rational:
         q = x.q
@@ -548,4 +546,179 @@ def home():
                     on_click=ir,
                     args=(clave_mod or "home",),
                     use_container_width=True,
-                    key=f"t_{
+                    key=f"t_{nombre}",
+                )
+                st.markdown(f'<div class="cap">{resumen}</div>', unsafe_allow_html=True)
+    pie()
+
+
+def preset(**kw):
+    for k in VARS:
+        st.session_state[f"s_{k}"] = k in kw
+        st.session_state[f"n_{k}"] = float(kw.get(k, 0.0))
+
+
+def cinematica():
+    st.button("← Volver al inicio", on_click=volver, key="back")
+    st.markdown('<div class="hero"><h1>Cinemática</h1><p>Movimiento en una dimensión: MRU, MRUA, caída libre y tiro vertical.</p></div>', unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
+    with tab1, st.container(key="teoria"):
+        st.markdown(
+            "**1. Sistema de referencia.** Elegí un origen y un sentido positivo. Lo que va en ese sentido es **+**, lo contrario es **−**. "
+            "En vertical conviene que + sea hacia arriba."
+        )
+        st.markdown("**2. Las cinco magnitudes**")
+        st.markdown("".join(chip(f"{x[1]} · {x[2]} ({x[3]})", x[4]) for x in VARS.values()), unsafe_allow_html=True)
+        st.markdown("**3. ¿Qué ecuación uso?** En MRUA elegí la que **no tiene** la magnitud que no conocés ni necesitás:")
+        for k in VARS:
+            st.markdown(f"Sin {chip(VARS[k][1], VARS[k][4])} → *{EQ[k][0]}*", unsafe_allow_html=True)
+            st.latex(eq_tex(k, {x: C(x, VARS[x][0]) for x in VARS}))
+        st.markdown("**4. MRU:** velocidad constante, a = 0. Alcanza con Δx = v·t.")
+        st.markdown(
+            "**5. Caída libre y tiro vertical:** a = −g = −9,8 m/s² (con + hacia arriba). «Se suelta» o «reposo» significa v₀ = 0. "
+            "En el punto más alto v = 0. Subir y bajar a la misma altura tarda lo mismo."
+        )
+        box(
+            "warn",
+            "Errores típicos",
+            "Olvidar el signo de g · no pasar km/h a m/s (dividí entre 3,6) · "
+            "no darse cuenta de que «se detiene» es v = 0.",
+        )
+    with tab2, st.container(key="solver"):
+        st.markdown("Marcá **exactamente 3 datos** de los 5 y completá sus valores. Unidades: m, m/s, m/s², s.")
+        pc = st.columns(4)
+        pc[0].button("Caída libre (reposo, 2 s)", on_click=preset, kwargs=dict(v0=0, a=-9.8, t=2), use_container_width=True)
+        pc[1].button("Altura máxima (20 m/s)", on_click=preset, kwargs=dict(v0=20, a=-9.8, v=0), use_container_width=True)
+        pc[2].button("Frenado (20 m/s a −5)", on_click=preset, kwargs=dict(v0=20, v=0, a=-5), use_container_width=True)
+        pc[3].button("MRU (10 m/s, 5 s)", on_click=preset, kwargs=dict(v0=10, a=0, t=5), use_container_width=True)
+        datos = {}
+        for col_, k in zip(st.columns(5), VARS):
+            with col_.container(key=f"c{k}"):
+                st.checkbox("Es dato", key=f"s_{k}")
+                x = st.number_input(
+                    f"{VARS[k][1]} · {VARS[k][2]} ({VARS[k][3]})",
+                    format="%g",
+                    step=1.0,
+                    key=f"n_{k}",
+                    disabled=not st.session_state[f"s_{k}"],
+                )
+                if st.session_state[f"s_{k}"]:
+                    datos[k] = x
+        if len(datos) != 3:
+            box("sign", "Faltan o sobran datos", f"Marcaste {len(datos)}. Con exactamente 3 datos el problema queda resuelto.")
+        else:
+            mostrar(datos)
+    pie()
+
+
+def dinamica():
+    st.button("← Volver al inicio", on_click=volver, key="back_din")
+    st.markdown('<div class="hero"><h1>Dinámica y Leyes de Newton</h1><p>Fuerza neta, masa, aceleración y peso en unidades del SI.</p></div>', unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
+    with tab1, st.container(key="teoria"):
+        st.markdown("**1. Segunda Ley de Newton:** la fuerza neta aplicada a un cuerpo es igual a su masa por su aceleración.")
+        st.latex(r"\sum \vec{F} = m \cdot \vec{a}")
+        st.markdown("**2. Peso:** fuerza gravitatoria sobre un cuerpo de masa $m$ ($g = 9,8\text{ m/s}^2$).")
+        st.latex(r"P = m \cdot g")
+        box("warn", "Errores típicos", "Confundir masa (kg) con peso (N) · olvidar restar la fuerza de rozamiento cuando se opone al movimiento.")
+    with tab2, st.container(key="solver"):
+        st.markdown("Elegí qué querés calcular con la 2.ª Ley de Newton ($F_{\\text{neta}} = m \\cdot a$):")
+        modo = st.selectbox("Incógnita", ["Fuerza neta (N)", "Masa (kg)", "Aceleración (m/s²)"])
+        if modo == "Fuerza neta (N)":
+            m_val = st.number_input("Masa m (kg)", min_value=0.001, value=5.0, step=0.5)
+            a_val = st.number_input("Aceleración a (m/s²)", value=2.0, step=0.5)
+            res_f = m_val * a_val
+            st.latex(rf"F_{{\text{{neta}}}} = {m_val:g}\ \text{{kg}} \cdot {a_val:g}\ \text{{m/s}}^2 = {res_f:g}\ \text{{N}}")
+            st.markdown(f'<div class="ok">Fuerza neta: <b>{res_f:g} N</b> · Peso aprox.: <b>{m_val * 9.8:g} N</b></div>', unsafe_allow_html=True)
+        elif modo == "Masa (kg)":
+            f_val = st.number_input("Fuerza neta F (N)", value=10.0, step=1.0)
+            a_val = st.number_input("Aceleración a (m/s²)", value=2.0, step=0.5)
+            if a_val == 0:
+                box("warn", "División por cero", "La aceleración no puede ser 0 para despejar la masa.")
+            else:
+                res_m = f_val / a_val
+                st.latex(rf"m = \frac{{{f_val:g}}}{{{a_val:g}}} = {res_m:g}\ \text{{kg}}")
+                st.markdown(f'<div class="ok">Masa: <b>{res_m:g} kg</b></div>', unsafe_allow_html=True)
+        else:
+            f_val = st.number_input("Fuerza neta F (N)", value=10.0, step=1.0)
+            m_val = st.number_input("Masa m (kg)", min_value=0.001, value=5.0, step=0.5)
+            res_a = f_val / m_val
+            st.latex(rf"a = \frac{{{f_val:g}}}{{{m_val:g}}} = {res_a:g}\ \text{{m/s}}^2")
+            st.markdown(f'<div class="ok">Aceleración: <b>{res_a:g} m/s²</b></div>', unsafe_allow_html=True)
+    pie()
+
+
+def ohm():
+    st.button("← Volver al inicio", on_click=volver, key="back_ohm")
+    st.markdown('<div class="hero"><h1>Electromagnetismo · Ley de Ohm</h1><p>Voltaje, corriente, resistencia y potencia eléctrica.</p></div>', unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
+    with tab1, st.container(key="teoria"):
+        st.markdown("**Ley de Ohm:** en un resistor óhmico, la diferencia de potencial es proporcional a la corriente.")
+        st.latex(r"V = I \cdot R \qquad P = V \cdot I")
+        box("warn", "Unidades SI", "Voltaje en voltios (V), corriente en amperes (A) y resistencia en ohms (Ω).")
+    with tab2, st.container(key="solver"):
+        calc = st.selectbox("¿Qué querés calcular?", ["Voltaje V (V)", "Corriente I (A)", "Resistencia R (Ω)"])
+        if calc == "Voltaje V (V)":
+            i_val = st.number_input("Corriente I (A)", value=2.0, step=0.1)
+            r_val = st.number_input("Resistencia R (Ω)", value=10.0, step=1.0)
+            v_res = i_val * r_val
+            p_res = v_res * i_val
+            st.latex(rf"V = {i_val:g}\ \text{{A}} \cdot {r_val:g}\ \Omega = {v_res:g}\ \text{{V}}")
+            st.markdown(f'<div class="ok">Voltaje: <b>{v_res:g} V</b> · Potencia: <b>{p_res:g} W</b></div>', unsafe_allow_html=True)
+        elif calc == "Corriente I (A)":
+            v_val = st.number_input("Voltaje V (V)", value=12.0, step=1.0)
+            r_val = st.number_input("Resistencia R (Ω)", min_value=0.001, value=6.0, step=1.0)
+            i_res = v_val / r_val
+            p_res = v_val * i_res
+            st.latex(rf"I = \frac{{{v_val:g}}}{{{r_val:g}}} = {i_res:g}\ \text{{A}}")
+            st.markdown(f'<div class="ok">Corriente: <b>{i_res:g} A</b> · Potencia: <b>{p_res:g} W</b></div>', unsafe_allow_html=True)
+        else:
+            v_val = st.number_input("Voltaje V (V)", value=12.0, step=1.0)
+            i_val = st.number_input("Corriente I (A)", value=2.0, step=0.1)
+            if i_val == 0:
+                box("warn", "Corriente nula", "La corriente no puede ser 0 para calcular la resistencia.")
+            else:
+                r_res = v_val / i_val
+                p_res = v_val * i_val
+                st.latex(rf"R = \frac{{{v_val:g}}}{{{i_val:g}}} = {r_res:g}\ \Omega")
+                st.markdown(f'<div class="ok">Resistencia: <b>{r_res:g} Ω</b> · Potencia: <b>{p_res:g} W</b></div>', unsafe_allow_html=True)
+    pie()
+
+
+def mediciones():
+    st.button("← Volver al inicio", on_click=volver, key="back_med")
+    st.markdown('<div class="hero"><h1>Mediciones e Incertidumbre</h1><p>Promedio, error absoluto, error porcentual y pasaje al SI.</p></div>', unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["Teoría", "Calculadora de serie"])
+    with tab1, st.container(key="teoria"):
+        st.markdown("**Promedio y error absoluto:** ante varias mediciones repetidas, se calcula el promedio $\\bar{x}$ y la dispersión máxima.")
+        st.latex(r"\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i \qquad E_{\text{rel\%}} = \frac{\Delta x}{\bar{x}} \cdot 100")
+    with tab2, st.container(key="solver"):
+        raw = st.text_input("Ingresá mediciones separadas por coma", value="10.2, 10.4, 10.1, 10.3")
+        unidad = st.text_input("Unidad", value="s")
+        try:
+            vals = [float(x.strip().replace(",", ".")) for x in raw.split(",") if x.strip()]
+        except ValueError:
+            vals = []
+        if len(vals) < 2:
+            box("sign", "Ingresá al menos 2 valores", "Ejemplo: 12.1, 12.3, 11.9")
+        else:
+            arr = np.array(vals)
+            prom = float(np.mean(arr))
+            err_abs = float(np.max(np.abs(arr - prom)))
+            err_pct = (err_abs / abs(prom) * 100) if prom != 0 else 0.0
+            st.markdown(
+                f'<div class="ok">Resultado: <b>({prom:.4g} ± {err_abs:.4g}) {unidad}</b> · Error porcentual: <b>{err_pct:.2f}%</b></div>',
+                unsafe_allow_html=True,
+            )
+    pie()
+
+
+PAGINAS = {
+    "home": home,
+    "cinematica": cinematica,
+    "dinamica": dinamica,
+    "ohm": ohm,
+    "mediciones": mediciones,
+}
+
+PAGINAS.get(st.session_state.tema, home)()
