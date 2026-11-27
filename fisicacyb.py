@@ -1,17 +1,17 @@
-import json
 import re
-
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 from sympy import S, Symbol, latex, nsimplify, simplify, solve
 
-st.set_page_config(page_title="Física paso a paso · Bachillerato", page_icon="🚀", layout="wide",
-                   initial_sidebar_state="collapsed")
+st.set_page_config(
+    page_title="Física paso a paso · Bachillerato",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
 
 NOTION_URL = "https://mahogany-lizard-400.notion.site"  # cambialo cuando acortes tu dominio
-MODEL = "claude-sonnet-5-5"  # para gastar menos: "claude-haiku-5-5"
-MAX_IA = 8  # consultas de IA por visita (protege tu saldo)
 
 # clave: (LaTeX, texto, nombre, unidad, color)
 VARS = {
@@ -23,6 +23,7 @@ VARS = {
 }
 E = {k: Symbol(k, real=True) for k in VARS}
 dx, v0, v, a, t = (E[k] for k in ("dx", "v0", "v", "a", "t"))
+
 # La clave es la variable que NO aparece en la ecuación
 EQ = {
     "dx": ("velocidad según el tiempo", r"@v=@v0+@a\cdot@t", v, v0 + a * t),
@@ -31,22 +32,26 @@ EQ = {
     "a": ("desplazamiento con la velocidad media", r"@dx=\dfrac{@v0+@v}{2}\cdot@t", dx, (v0 + v) * t / 2),
     "v0": ("desplazamiento con la velocidad final", r"@dx=@v\cdot@t-\dfrac{1}{2}\cdot@a\cdot@t^2", dx, v * t - a * t**2 / 2),
 }
+
 PLAN = {
-    "1.º año · 4.º de Liceo": [
+    "1.º año · 4.º de Liceo (Tramo 7)": [
         ("Introducción y mediciones", "SI, cifras significativas, errores e incertidumbre"),
-        ("Óptica geométrica", "Reflexión, refracción, Snell, lentes e instrumentos"),
-        ("Electricidad y circuitos", "Carga, corriente, voltaje, Ley de Ohm, serie y paralelo"),
-        ("Magnetismo inicial", "Imanes, campo terrestre, corrientes e imanes")],
-    "2.º año · 5.º de Liceo": [
-        ("Cinemática", "MRU, MRUA, caída libre, tiro vertical · próximos: tiro parabólico y circular"),
-        ("Dinámica y leyes de Newton", "Fuerzas, diagramas de cuerpo libre, gravitación"),
-        ("Trabajo, energía y conservación", "Trabajo, potencia, energías, impulso"),
-        ("Termodinámica", "Calor, gases ideales, principios, máquinas térmicas")],
+        ("Vibraciones y ondas", "Ondas mecánicas y sonoras, reflexión, refracción y difracción"),
+        ("Luz y óptica geométrica", "Espectro electromagnético, espejos, lentes y colores"),
+        ("Introducción al electromagnetismo", "Circuitos básicos, Ley de Ohm, Kirchhoff, Faraday y Lenz"),
+    ],
+    "2.º año · 5.º de Liceo (Tramo 8)": [
+        ("Cinemática", "MRU, MRUA, caída libre, tiro vertical · próximos: parabólico y circular"),
+        ("Dinámica y leyes de Newton", "Vectores, fuerzas, leyes de Newton y Gravitación Universal"),
+        ("Trabajo, energía y conservación", "Trabajo, potencia, energía mecánica, impulso y cantidad de movimiento"),
+        ("Termodinámica", "Equilibrio térmico, calor, 1.º y 2.º principio, máquinas térmicas"),
+    ],
     "3.º año · 6.º de Liceo": [
-        ("Electrostática y campo eléctrico", "Coulomb, campo, Gauss, potencial"),
-        ("Magnetostática y campo magnético", "Lorentz, Biot-Savart, Ampère"),
-        ("Inducción y ondas", "Faraday-Lenz, Maxwell, ondas electromagnéticas"),
-        ("Física moderna", "Cuántica inicial y relatividad especial")],
+        ("Electrostática y campo eléctrico", "Coulomb, campo eléctrico, Ley de Gauss, potencial y condensadores"),
+        ("Magnetismo y electromagnetismo", "Fuerza magnética, Ampère-Maxwell e inducción de Faraday"),
+        ("Ecuaciones de Maxwell y ondas", "Síntesis del electromagnetismo y propagación de ondas EM"),
+        ("Física moderna", "Efecto fotoeléctrico, modelos atómicos y relatividad especial"),
+    ],
 }
 
 CSS = """<style>
@@ -55,7 +60,7 @@ CSS = """<style>
 header[data-testid="stHeader"]{background:transparent}[data-testid="stSidebar"],[data-testid="collapsedControl"]{display:none}
 .block-container{max-width:1250px;padding-top:1.4rem}h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif!important}
 .hero h1{margin:0;font-size:2.7rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(90deg,#fff,#22e3ff 60%,#b388ff);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0}
-.hero p{color:#aab3e6;max-width:680px;margin:4px 0 14px;font-size:1.05rem}
+.hero p{color:#aab3e6;max-width:720px;margin:4px 0 14px;font-size:1.05rem}
 .st-key-pegar,.st-key-teoria,.st-key-solver,.st-key-resul{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:20px 24px;backdrop-filter:blur(14px)}
 .st-key-pegar{border-color:#22e3ff88;box-shadow:0 0 40px -14px #22e3ff}
 textarea{background:rgba(0,0,0,.4)!important;color:#e8ecff!important;border-radius:14px!important;font-size:1.02rem!important}
@@ -82,8 +87,12 @@ div[data-baseweb="textarea"]:focus-within{box-shadow:0 0 0 3px #22e3ff44,0 0 28p
 [data-testid="stNumberInput"] div[data-baseweb="input"]{background:rgba(0,0,0,.45)!important;border:1.5px solid var(--k)!important;border-radius:14px!important}
 [data-testid="stNumberInput"] input{color:var(--k)!important;font-weight:800;font-size:1.4rem;text-shadow:0 0 12px var(--k)}
 [data-testid="stNumberInput"] button{color:var(--k)!important}
-.credit{margin:36px auto 12px;max-width:560px;text-align:center;padding:14px 20px;border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);color:#aab3e6;line-height:1.6;transition:box-shadow .25s,border-color .25s}
-.credit:hover{border-color:#ffe14a;box-shadow:0 0 30px -8px #ffe14a}.credit b{color:#ffe14a;font-size:1.15rem;text-shadow:0 0 12px #ffe14a88}.credit a{color:#22e3ff}
+.credit{margin:36px auto 12px;max-width:600px;text-align:center;padding:16px 22px;border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.12);color:#aab3e6;line-height:1.65;transition:box-shadow .25s,border-color .25s}
+.credit:hover{border-color:#b8ff2c;box-shadow:0 0 30px -8px #b8ff2c}
+.credit b{color:#ffe14a;font-size:1.15rem;text-shadow:0 0 12px #ffe14a88}
+.credit .agro{color:#b8ff2c;font-weight:600}
+.credit a{color:#22e3ff;text-decoration:none;font-weight:600}
+.credit a:hover{text-decoration:underline}
 __VARCSS__</style>""".replace("__VARCSS__", "".join(f".st-key-c{k}{{--k:{x[4]}}}" for k, x in VARS.items()))
 st.markdown(CSS, unsafe_allow_html=True)
 
@@ -138,7 +147,7 @@ def num_txt(k, x):
     return f"{VARS[k][1]} = {plano(x)} {VARS[k][3]}"
 
 
-# ---------- Motor exacto (SymPy): la IA nunca hace las cuentas ----------
+# ---------- Motor exacto (SymPy): hace todas las cuentas ----------
 def resolver(datos):
     sub = {E[k]: nsimplify(x, rational=True) for k, x in datos.items()}
     inc = [k for k in VARS if k not in datos]
@@ -161,36 +170,58 @@ def resolver(datos):
 
 
 def lin(xs, ys, titulo, k, pt):
-    f = go.Figure(go.Scatter(x=xs, y=ys, mode="lines", line=dict(color=VARS[k][4], width=3.5),
-                             hovertemplate="t=%{x:.2f} s<br>%{y:.2f}<extra></extra>"))
+    f = go.Figure(go.Scatter(
+        x=xs, y=ys, mode="lines",
+        line=dict(color=VARS[k][4], width=3.5),
+        hovertemplate="t=%{x:.2f} s<br>%{y:.2f}<extra></extra>",
+    ))
     f.add_trace(go.Scatter(x=[pt[0]], y=[pt[1]], mode="markers", marker=dict(size=11, color="#fff"), hoverinfo="skip"))
     ax = dict(gridcolor="rgba(255,255,255,.08)", zerolinecolor="rgba(255,255,255,.7)", color="#aab3e6")
-    f.update_layout(title=dict(text=titulo, font=dict(color="#e8ecff", size=14)), height=300, showlegend=False,
-                    margin=dict(l=8, r=8, t=40, b=8), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,.25)",
-                    xaxis=dict(title="t (s)", **ax), yaxis=ax)
+    f.update_layout(
+        title=dict(text=titulo, font=dict(color="#e8ecff", size=14)),
+        height=300, showlegend=False,
+        margin=dict(l=8, r=8, t=40, b=8),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,.25)",
+        xaxis=dict(title="t (s)", **ax), yaxis=ax,
+    )
     return f
 
 
 def mostrar(datos):
     sols = resolver(datos)
     if not sols:
-        box("warn", "No encontré una solución física", "Revisá los datos y sus signos: con ellos el movimiento no es posible "
-            "(por ejemplo, un tiempo negativo o una raíz de un número negativo).")
+        box(
+            "warn",
+            "No encontré una solución física",
+            "Revisá los datos y sus signos: con ellos el movimiento no es posible "
+            "(por ejemplo, un tiempo negativo o una raíz de un número negativo).",
+        )
         return
     SIM = {k: C(k, VARS[k][0]) for k in VARS}
     for i, s in enumerate(sols, 1):
         vals, (u1, u2) = s["vals"], s["orden"]
         if len(sols) > 1:
             st.markdown(f'<div class="sh">Solución {i} de {len(sols)}</div>', unsafe_allow_html=True)
-            box("sign", "¿Por qué dos?", "Las dos son matemáticamente válidas. Elegí según el contexto "
-                "(por ejemplo, el cuerpo pasa dos veces por la misma altura: una subiendo y otra bajando).")
+            box(
+                "sign",
+                "¿Por qué dos?",
+                "Las dos son matemáticamente válidas. Elegí según el contexto "
+                "(por ejemplo, el cuerpo pasa dos veces por la misma altura: una subiendo y otra bajando).",
+            )
         st.markdown('<div class="sh">1. Datos e incógnitas</div>', unsafe_allow_html=True)
-        st.markdown("".join(chip(num_txt(k, vals[k]), VARS[k][4]) if k in datos else
-                            chip(f"{VARS[k][1]} = ?  ({VARS[k][2]})", VARS[k][4]) for k in VARS), unsafe_allow_html=True)
+        st.markdown(
+            "".join(
+                chip(num_txt(k, vals[k]), VARS[k][4]) if k in datos else chip(f"{VARS[k][1]} = ?  ({VARS[k][2]})", VARS[k][4])
+                for k in VARS
+            ),
+            unsafe_allow_html=True,
+        )
         st.markdown('<div class="sh">2. Elegí la ecuación y reemplazá</div>', unsafe_allow_html=True)
         for n, (u, falta) in enumerate(((u1, u2), (u2, u1))):
-            st.markdown(f"**{'Primero' if n == 0 else 'Después'}, hallá {VARS[u][1]} ({VARS[u][2]})**: usá una ecuación "
-                        f"**sin {VARS[falta][1]}**, que es la que todavía no conocés. Es la {EQ[falta][0]}.")
+            st.markdown(
+                f"**{'Primero' if n == 0 else 'Después'}, hallá {VARS[u][1]} ({VARS[u][2]})**: usá una ecuación "
+                f"**sin {VARS[falta][1]}**, que es la que todavía no conocés. Es la {EQ[falta][0]}."
+            )
             st.latex(eq_tex(falta, SIM))
             P = {k: (SIM[k] if k == u else val(k, vals[k])) for k in VARS}
             st.latex(eq_tex(falta, P))
@@ -201,8 +232,7 @@ def mostrar(datos):
             if u == "v" and falta == "t":
                 box("warn", "Cuidado con ±", "Al sacar la raíz hay dos signos posibles. Se elige el que coincide con el sentido del movimiento.")
         st.markdown('<div class="sh">3. Respuesta</div>', unsafe_allow_html=True)
-        resp = " · ".join(f"<b>{VARS[k][2]}</b>: {num_txt(k, vals[k])}"
-                          for k in (u1, u2))
+        resp = " · ".join(f"<b>{VARS[k][2]}</b>: {num_txt(k, vals[k])}" for k in (u1, u2))
         st.markdown(f'<div class="ok">{resp}</div>', unsafe_allow_html=True)
         st.markdown('<div class="sh">4. Comprobá con otra ecuación</div>', unsafe_allow_html=True)
         chk = next((k for k in VARS if k in datos), u1)
@@ -214,36 +244,189 @@ def mostrar(datos):
             ts = np.linspace(0, T, 200)
             v0f, af = float(vals["v0"]), float(vals["a"])
             g1, g2 = st.columns(2)
-            g1.plotly_chart(lin(ts, v0f * ts + af * ts**2 / 2, "Posición recorrida", "dx",
-                                (T, float(vals["dx"]))), use_container_width=True, config={"displaylogo": False})
-            g2.plotly_chart(lin(ts, v0f + af * ts, "Velocidad", "v", (T, float(vals["v"]))),
-                            use_container_width=True, config={"displaylogo": False})
+            g1.plotly_chart(
+                lin(ts, v0f * ts + af * ts**2 / 2, "Posición recorrida", "dx", (T, float(vals["dx"]))),
+                use_container_width=True,
+                config={"displaylogo": False},
+            )
+            g2.plotly_chart(
+                lin(ts, v0f + af * ts, "Velocidad", "v", (T, float(vals["v"]))),
+                use_container_width=True,
+                config={"displaylogo": False},
+            )
 
 
-# ---------- IA: solo identifica y explica el enunciado ----------
-SISTEMA = """Sos profesor de Física de Bachillerato en Uruguay. Analizá el ejercicio y respondé SOLO con JSON válido, sin texto extra ni ```:
-{"tipo":"mru|mrua|caida_libre|tiro_vertical|otro","tema":"nombre del tema si es otro","datos":{"dx":n|null,"v0":n|null,"v":n|null,"a":n|null,"t":n|null},
-"frases":[{"frase":"texto literal del enunciado","clave":"dx|v0|v|a|t","valor":n,"por_que":"explicación corta"}],
-"incognita":"dx|v0|v|a|t","cuidados":["errores típicos a evitar en este ejercicio"]}
-Reglas: todo en unidades SI (convertí km/h a m/s y explicalo). Elegí el eje positivo en el sentido del movimiento inicial o hacia arriba en vertical; g = 9,8 m/s² (a = -9,8 si el eje positivo es hacia arriba). Incluí los datos implícitos: «reposo»/«se suelta» → v0=0; «se detiene»/«punto más alto» → v=0; «caída libre» → a=±9,8. Si el ejercicio no es de cinemática en una dimensión, tipo=otro, datos vacíos y explicá en cuidados qué teoría aplicar. No resuelvas el ejercicio."""
+# ---------- Tutor / Analizador Gratuito (sin API de pago) ----------
+def analizar_enunciado_gratis(texto):
+    """Analiza el enunciado en español de forma gratuita y sin API de pago."""
+    limpio = texto.strip()
+    baja = limpio.lower()
 
+    fuera_tema = [
+        ("newton|fuerza|masa|dinámica|dinamica|rozamiento", "Dinámica y leyes de Newton"),
+        ("energía|energia|trabajo|potencia|cinética|cinetica|potencial", "Trabajo y energía"),
+        ("ohm|voltaje|corriente|resistencia|circuito|amperes|amperios", "Electricidad y circuitos"),
+        ("refracción|refraccion|reflexión|reflexion|lente|espejo|snell", "Óptica geométrica"),
+        ("calor|temperatura|gas ideal|termodinámica|termodinamica", "Termodinámica"),
+    ]
+    for patron, nombre_tema in fuera_tema:
+        if re.search(patron, baja) and not re.search(r"velocidad|aceleración|aceleracion|caída|caida|mrua|mru", baja):
+            return {
+                "tipo": "otro",
+                "tema": nombre_tema,
+                "datos": {},
+                "frases": [],
+                "incognita": None,
+                "cuidados": [f"Este enunciado parece corresponder a <b>{nombre_tema}</b>. Verificá las magnitudes y fórmulas de ese tema."],
+            }, None
 
-def pedir_ia(texto):
-    try:
-        clave = st.secrets["ANTHROPIC_API_KEY"]
-    except Exception:
-        return None, "Falta configurar la clave de la IA (ANTHROPIC_API_KEY) en los Secrets de Streamlit."
-    if st.session_state.get("n_ia", 0) >= MAX_IA:
-        return None, "Llegaste al límite de consultas de esta visita. Probá más tarde o usá «Resolver con datos»."
-    try:
-        import anthropic
-        r = anthropic.Anthropic(api_key=clave).messages.create(
-            model=MODEL, max_tokens=1500, system=SISTEMA, messages=[{"role": "user", "content": texto}])
-        st.session_state.n_ia = st.session_state.get("n_ia", 0) + 1
-        crudo = re.sub(r"^```(?:json)?|```$", "", r.content[0].text.strip()).strip()
-        return json.loads(crudo), None
-    except Exception as e:
-        return None, f"No pude analizar el ejercicio ({type(e).__name__}). Probá de nuevo o reescribilo más corto."
+    datos = {}
+    frases = []
+    cuidados = []
+
+    # 1. Datos implícitos frecuentes en bachillerato
+    if re.search(r"\b(reposo|se suelta|deja caer|dejado caer|parte del reposo)\b", baja):
+        datos["v0"] = 0.0
+        frases.append({
+            "frase": "reposo / se suelta / se deja caer",
+            "clave": "v0",
+            "valor": 0.0,
+            "por_que": "Dato implícito: al partir del reposo o soltarse, la velocidad inicial es 0 m/s.",
+        })
+
+    if re.search(r"\b(se detiene|frena hasta detenerse|punto más alto|altura máxima|llega arriba)\b", baja):
+        datos["v"] = 0.0
+        frases.append({
+            "frase": "se detiene / punto más alto",
+            "clave": "v",
+            "valor": 0.0,
+            "por_que": "Dato implícito: al detenerse o alcanzar el punto más alto, la velocidad final (o en ese instante) es 0 m/s.",
+        })
+
+    es_vertical = bool(re.search(r"\b(caída libre|caida libre|tiro vertical|cae|sube|altura|puente|edificio|pozo)\b", baja))
+    if es_vertical and "a" not in datos:
+        datos["a"] = -9.8
+        frases.append({
+            "frase": "movimiento vertical bajo gravedad (g = 9,8 m/s²)",
+            "clave": "a",
+            "valor": -9.8,
+            "por_que": "Con el eje positivo hacia arriba, la aceleración gravitatoria es -9,8 m/s².",
+        })
+        cuidados.append("Revisá el signo de la aceleración (g = 9,8 m/s²) según el sentido positivo que elijas en tu eje vertical.")
+
+    # 2. Buscar valores numéricos con unidades
+    patron_num = r"(-?\d+(?:[.,]\d+)?)\s*(km/h|m/s²|m/s2|m/s|km|cm|mm|m|min|horas|hora|h|s)\b"
+    for m in re.finditer(patron_num, baja):
+        raw_num = m.group(1).replace(",", ".")
+        unidad = m.group(2)
+        try:
+            num = float(raw_num)
+        except ValueError:
+            continue
+
+        span_ini = max(0, m.start() - 35)
+        span_fin = min(len(baja), m.end() + 35)
+        contexto = baja[span_ini:span_fin]
+        fragmento_real = limpio[max(0, m.start() - 18):min(len(limpio), m.end() + 18)].strip()
+
+        if unidad == "km/h":
+            conv = round(num / 3.6, 6)
+            clave = "v0" if "v0" not in datos or re.search(r"inicial|parte|arranca|sale", contexto) else "v"
+            datos[clave] = conv
+            frases.append({
+                "frase": fragmento_real,
+                "clave": clave,
+                "valor": conv,
+                "por_que": f"Convertido de {raw_num.replace('.', ',')} km/h a m/s dividiendo entre 3,6.",
+            })
+            cuidados.append(f"Se convirtió {raw_num.replace('.', ',')} km/h a m/s (÷ 3,6) para trabajar en unidades del SI.")
+        elif unidad == "m/s":
+            if re.search(r"inicial|parte|arranca|sale|lanza|dispara", contexto) and "v0" not in datos:
+                clave = "v0"
+            elif re.search(r"final|llega|alcanza|al cabo", contexto) and "v" not in datos:
+                clave = "v"
+            else:
+                clave = "v0" if "v0" not in datos else "v"
+            datos[clave] = num
+            frases.append({
+                "frase": fragmento_real,
+                "clave": clave,
+                "valor": num,
+                "por_que": "Velocidad expresada directamente en m/s.",
+            })
+        elif unidad in ("m/s²", "m/s2"):
+            if re.search(r"frena|frenado|desacelera", contexto) and num > 0:
+                num = -num
+                cuidados.append("Al frenar en el sentido del movimiento positivo, la aceleración es negativa.")
+            datos["a"] = num
+            frases.append({
+                "frase": fragmento_real,
+                "clave": "a",
+                "valor": num,
+                "por_que": "Aceleración en m/s².",
+            })
+        elif unidad in ("km", "cm", "mm", "m"):
+            val_m = num
+            if unidad == "km":
+                val_m = num * 1000.0
+                cuidados.append(f"Se convirtieron {raw_num.replace('.', ',')} km a metros (× 1000).")
+            elif unidad == "cm":
+                val_m = num / 100.0
+                cuidados.append(f"Se convirtieron {raw_num.replace('.', ',')} cm a metros (÷ 100).")
+            elif unidad == "mm":
+                val_m = num / 1000.0
+                cuidados.append(f"Se convirtieron {raw_num.replace('.', ',')} mm a metros (÷ 1000).")
+            if "dx" not in datos:
+                datos["dx"] = val_m
+                frases.append({
+                    "frase": fragmento_real,
+                    "clave": "dx",
+                    "valor": val_m,
+                    "por_que": "Distancia / desplazamiento en metros (SI).",
+                })
+        elif unidad in ("min", "horas", "hora", "h", "s"):
+            val_s = num
+            if unidad == "min":
+                val_s = num * 60.0
+                cuidados.append(f"Se convirtieron {raw_num.replace('.', ',')} min a segundos (× 60).")
+            elif unidad in ("horas", "hora", "h"):
+                val_s = num * 3600.0
+                cuidados.append(f"Se convirtieron {raw_num.replace('.', ',')} h a segundos (× 3600).")
+            if "t" not in datos:
+                datos["t"] = val_s
+                frases.append({
+                    "frase": fragmento_real,
+                    "clave": "t",
+                    "valor": val_s,
+                    "por_que": "Tiempo en segundos (SI).",
+                })
+
+    # 3. Detectar incógnita probable
+    incognita = None
+    if re.search(r"cuánto tarda|cuanto tarda|qué tiempo|que tiempo|en qué momento|tiempo", baja) and "t" not in datos:
+        incognita = "t"
+    elif re.search(r"qué altura|que altura|qué distancia|que distancia|cuánto recorre|cuanto recorre|desplazamiento", baja) and "dx" not in datos:
+        incognita = "dx"
+    elif re.search(r"aceleración|aceleracion|frena con", baja) and "a" not in datos:
+        incognita = "a"
+    elif re.search(r"velocidad inicial|con qué velocidad parte|con que velocidad sale", baja) and "v0" not in datos:
+        incognita = "v0"
+    elif re.search(r"velocidad|qué rapidez|que rapidez|al llegar|al impactar", baja):
+        incognita = "v" if "v" not in datos else "v0"
+    else:
+        incognita = next((k for k in VARS if k not in datos), None)
+
+    if not cuidados:
+        cuidados.append("Verificá que todos los datos estén en el Sistema Internacional (m, m/s, m/s², s) antes de despejar.")
+
+    return {
+        "tipo": "mrua",
+        "tema": "Cinemática",
+        "datos": datos,
+        "frases": frases,
+        "incognita": incognita,
+        "cuidados": cuidados[:3],
+    }, None
 
 
 def cargar(datos):
@@ -268,8 +451,12 @@ def ir(clave):
 
 
 def pie():
-    st.markdown(f'<div class="credit">Desarrollador de la App<br><b>Leonardo Olivera</b><br>Bachiller en Agronomía<br>'
-                f'<a href="{NOTION_URL}" target="_blank">Ver mi sitio</a></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="credit">Desarrollador: <b>Leonardo Olivera</b><br>'
+        f'<span class="agro">🌾 Bachiller en Agronomía</span><br>'
+        f'<a href="{NOTION_URL}" target="_blank">Ver mi sitio</a></div>',
+        unsafe_allow_html=True,
+    )
 
 
 def datos_validos(d):
@@ -283,16 +470,24 @@ def datos_validos(d):
 
 # ---------- Páginas ----------
 def home():
-    st.markdown('<div class="hero"><h1>Física paso a paso</h1><p>Pegá un ejercicio y lo desmenuzo: qué datos tiene, '
-                'qué teoría usar y cómo resolverlo sin perderte. Las cuentas las hace un motor exacto, no la IA.</p></div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<div class="hero"><h1>Física paso a paso</h1><p>Pegá un ejercicio y lo desmenuzo gratis: qué datos tiene, '
+        'qué teoría usar y cómo resolverlo sin perderte. Las cuentas exactas las hace SymPy.</p></div>',
+        unsafe_allow_html=True,
+    )
     with st.container(key="pegar"):
         st.markdown("#### 1. Pegá tu ejercicio")
-        texto = st.text_area("Enunciado", height=120, label_visibility="collapsed", key="enun",
-                             placeholder="Ej: Una piedra se deja caer desde un puente y tarda 3 s en llegar al agua. ¿Qué altura tiene el puente?")
-        if st.button("Desmenuzar ejercicio", type="primary", disabled=len(texto.strip()) < 15):
-            with st.spinner("Leyendo el enunciado…"):
-                st.session_state.analisis = pedir_ia(texto)
+        texto = st.text_area(
+            "Enunciado",
+            height=120,
+            label_visibility="collapsed",
+            key="enun",
+            placeholder="Ej: Una piedra se deja caer desde un puente y tarda 3 s en llegar al agua. ¿Qué altura tiene el puente?",
+        )
+        if st.button("Desmenuzar ejercicio (Gratis)", type="primary", disabled=len(texto.strip()) < 15):
+            with st.spinner("Analizando el enunciado…"):
+                st.session_state.analisis = analizar_enunciado_gratis(texto)
+
     res = st.session_state.get("analisis")
     if res:
         info, err = res
@@ -304,8 +499,11 @@ def home():
                 for f in info.get("frases", []):
                     k = f.get("clave")
                     if k in VARS:
-                        st.markdown(f'<div class="frase">{chip(num_txt(k, nsimplify(str(f.get("valor", 0)), rational=True)), VARS[k][4])} '
-                                    f'<i>«{f.get("frase", "")}»</i><br>{f.get("por_que", "")}</div>', unsafe_allow_html=True)
+                        st.markdown(
+                            f'<div class="frase">{chip(num_txt(k, nsimplify(str(f.get("valor", 0)), rational=True)), VARS[k][4])} '
+                            f'<i>«{f.get("frase", "")}»</i><br>{f.get("por_que", "")}</div>',
+                            unsafe_allow_html=True,
+                        )
                 d = datos_validos(info.get("datos"))
                 inc = info.get("incognita")
                 if inc in VARS:
@@ -313,16 +511,25 @@ def home():
                 for c_ in info.get("cuidados", []):
                     box("warn", "Cuidado", c_)
                 if info.get("tipo") == "otro":
-                    box("sign", "Tema fuera de esta versión", f"Parece de <b>{info.get('tema', 'otro tema')}</b>. "
-                        "Ese módulo está en desarrollo; arriba te dejé la teoría que conviene aplicar.")
+                    box(
+                        "sign",
+                        "Tema fuera de esta versión",
+                        f"Parece de <b>{info.get('tema', 'otro tema')}</b>. "
+                        "Ese módulo está en desarrollo; arriba te dejé la guía inicial para ese tema.",
+                    )
                 elif len(d) == 3:
                     st.markdown("#### 3. Resolución")
                     mostrar(d)
                     st.button("Editar estos datos", on_click=cargar, args=(d,), key="ed")
                 else:
-                    box("sign", "Revisá los datos", f"Detecté {len(d)} datos y hacen falta exactamente 3. "
-                        "Corregilos en «Resolver con datos».")
+                    box(
+                        "sign",
+                        "Revisá los datos",
+                        f"Detecté {len(d)} datos y hacen falta exactamente 3. "
+                        "Completalos o ajustalos en «Resolver con datos».",
+                    )
                     st.button("Abrir con estos datos", on_click=cargar, args=(d,), key="ed")
+
     st.markdown("#### O elegí un tema")
     cols = st.columns(3, gap="large")
     for col_, (anio, temas) in zip(cols, PLAN.items()):
@@ -330,8 +537,14 @@ def home():
             st.markdown(f'<div class="plan-h">{anio}</div>', unsafe_allow_html=True)
             for nombre, resumen in temas:
                 listo = nombre == "Cinemática"
-                st.button(("▶ " if listo else "") + nombre + ("" if listo else " · pronto"), disabled=not listo,
-                          on_click=ir, args=("cinematica",), use_container_width=True, key=f"t_{nombre}")
+                st.button(
+                    ("▶ " if listo else "") + nombre + ("" if listo else " · pronto"),
+                    disabled=not listo,
+                    on_click=ir,
+                    args=("cinematica",),
+                    use_container_width=True,
+                    key=f"t_{nombre}",
+                )
                 st.markdown(f'<div class="cap">{resumen}</div>', unsafe_allow_html=True)
     pie()
 
@@ -344,12 +557,13 @@ def preset(**kw):
 
 def cinematica():
     st.button("← Volver al inicio", on_click=volver, key="back")
-    st.markdown('<div class="hero"><h1>Cinemática</h1><p>Movimiento en una dimensión: MRU, MRUA, caída libre y tiro vertical.</p></div>',
-                unsafe_allow_html=True)
+    st.markdown('<div class="hero"><h1>Cinemática</h1><p>Movimiento en una dimensión: MRU, MRUA, caída libre y tiro vertical.</p></div>', unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Teoría", "Resolver con datos"])
     with tab1, st.container(key="teoria"):
-        st.markdown("**1. Sistema de referencia.** Elegí un origen y un sentido positivo. Lo que va en ese sentido es **+**, lo contrario es **−**. "
-                    "En vertical conviene que + sea hacia arriba.")
+        st.markdown(
+            "**1. Sistema de referencia.** Elegí un origen y un sentido positivo. Lo que va en ese sentido es **+**, lo contrario es **−**. "
+            "En vertical conviene que + sea hacia arriba."
+        )
         st.markdown("**2. Las cinco magnitudes**")
         st.markdown("".join(chip(f"{x[1]} · {x[2]} ({x[3]})", x[4]) for x in VARS.values()), unsafe_allow_html=True)
         st.markdown("**3. ¿Qué ecuación uso?** En MRUA elegí la que **no tiene** la magnitud que no conocés ni necesitás:")
@@ -357,10 +571,16 @@ def cinematica():
             st.markdown(f"Sin {chip(VARS[k][1], VARS[k][4])} → *{EQ[k][0]}*", unsafe_allow_html=True)
             st.latex(eq_tex(k, {x: C(x, VARS[x][0]) for x in VARS}))
         st.markdown("**4. MRU:** velocidad constante, a = 0. Alcanza con Δx = v·t.")
-        st.markdown("**5. Caída libre y tiro vertical:** a = −g = −9,8 m/s² (con + hacia arriba). «Se suelta» o «reposo» significa v₀ = 0. "
-                    "En el punto más alto v = 0. Subir y bajar a la misma altura tarda lo mismo.")
-        box("warn", "Errores típicos", "Olvidar el signo de g · no pasar km/h a m/s (dividí entre 3,6) · "
-            "no darse cuenta de que «se detiene» es v = 0.")
+        st.markdown(
+            "**5. Caída libre y tiro vertical:** a = −g = −9,8 m/s² (con + hacia arriba). «Se suelta» o «reposo» significa v₀ = 0. "
+            "En el punto más alto v = 0. Subir y bajar a la misma altura tarda lo mismo."
+        )
+        box(
+            "warn",
+            "Errores típicos",
+            "Olvidar el signo de g · no pasar km/h a m/s (dividí entre 3,6) · "
+            "no darse cuenta de que «se detiene» es v = 0.",
+        )
     with tab2, st.container(key="solver"):
         st.markdown("Marcá **exactamente 3 datos** de los 5 y completá sus valores. Unidades: m, m/s, m/s², s.")
         pc = st.columns(4)
@@ -372,8 +592,13 @@ def cinematica():
         for col_, k in zip(st.columns(5), VARS):
             with col_.container(key=f"c{k}"):
                 st.checkbox("Es dato", key=f"s_{k}")
-                x = st.number_input(f"{VARS[k][1]} · {VARS[k][2]} ({VARS[k][3]})", format="%g", step=1.0, key=f"n_{k}",
-                                    disabled=not st.session_state[f"s_{k}"])
+                x = st.number_input(
+                    f"{VARS[k][1]} · {VARS[k][2]} ({VARS[k][3]})",
+                    format="%g",
+                    step=1.0,
+                    key=f"n_{k}",
+                    disabled=not st.session_state[f"s_{k}"],
+                )
                 if st.session_state[f"s_{k}"]:
                     datos[k] = x
         if len(datos) != 3:
@@ -383,4 +608,7 @@ def cinematica():
     pie()
 
 
-home() if st.session_state.tema == "home" else cinematica()
+if st.session_state.tema == "home":
+    home()
+else:
+    cinematica()
